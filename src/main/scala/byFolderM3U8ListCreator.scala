@@ -3,47 +3,58 @@ import java.io.{File, PrintWriter}
 object ByFolderMp3U3ListMakerEntry {
   def main(args: Array[String]): Unit = {
 
+    require(args.length > 0, "fetch directory")
 
-//    require(args.length == 0, "fetch directory")
+    for (filePath <- args) {
 
-    if (args.length == 0) {
-      println("fetch directory")
+      if (isFileExistAndIsDirecotry(filePath)) {
 
-      return
-    }
-
-    for (arg <- args) {
-
-      val folder = new File(arg)
-      val saveFileLocation = folder.getParent + "\\" + folder.getName + "PlayList" + ".m3u8"
-
-      if (folder.exists() && folder.isDirectory) {
-
-        val mp3u8ListBeginText = "#EXTM3U"
-        val trackEntryText = "#EXTINF:"
-
-        var fileListContent = List(mp3u8ListBeginText)
-
-        for (file <- selectFilesWithExtension(recursiveListAllFilesInDirectory(folder), "mp3")) {
-
-          val playlistFilePathEntry = file.getAbsolutePath.replaceAllLiterally(folder.getParent + "\\", "")
-
-          fileListContent ++= List(trackEntryText, playlistFilePathEntry)
-
-        }
-
-        val inTextContent = fileListContent.mkString("\r\n")
-
-        val writer = new PrintWriter(new File(saveFileLocation))
-        writer.write(inTextContent)
-        writer.close()
-        println(saveFileLocation + " playlist created")
+        saveM3U8List(createListContent(filePath, "mp3"), createSavePath(filePath))
 
       }
 
     }
 
   }
+
+  def isFileExistAndIsDirecotry(arg: String): Boolean = {
+    val folder = new File(arg)
+    folder.exists() && folder.isDirectory
+  }
+
+  def saveM3U8List(content: String, fileLocation: String): Unit = {
+    val writer = new PrintWriter(new File(fileLocation))
+    writer.write(content)
+    writer.close()
+    println(fileLocation + " playlist created")
+  }
+
+  def createListContent(folderPath: String, fileExtension: String): String = {
+
+    val folder = new File(folderPath)
+
+    val mp3u8ListBeginText = "#EXTM3U"
+    val trackEntryText = "#EXTINF:"
+
+    var fileListContent = List(mp3u8ListBeginText)
+
+    for (file <- selectFilesWithExtension(recursiveListAllFilesInDirectory(folder), fileExtension)) {
+
+      val playlistFilePathEntry = file.getAbsolutePath.replaceAllLiterally(folder.getParent + "\\", "")
+
+      fileListContent ++= List(trackEntryText, playlistFilePathEntry)
+
+    }
+
+    fileListContent.mkString("\r\n")
+  }
+
+
+  def createSavePath(filePath: String): String = {
+    val folder = new File(filePath)
+    folder.getParent + "\\" + folder.getName + "PlayList" + ".m3u8"
+  }
+
 
   def recursiveListAllFilesInDirectory(f: File): Array[File] = {
     val currentLevelDirectory = f.listFiles
